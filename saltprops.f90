@@ -4,12 +4,12 @@ character(*),parameter :: modName = 'saltprops'
 integer :: iout = 0
 
 contains 
-
+! TO-DO: fix the units here! Also, work on multiplying by number of moles
   real(8) function h_nacl(T)
     character(*),parameter :: myName = 'h_nacl'
     real(8) :: T
     real(8) :: a,b,c,dfH0
-    write(0,*) T
+    
     if ((T >= 298.0d0) .and. (T <= 1500.0d0)) then
       a = 77.7638d0
       b = -0.0075312d0
@@ -31,15 +31,25 @@ contains
   
   real(8) function h_ucl3(T)
     real(8) :: T
+    real(8) :: a,b,c,dfH0
     
+    a = 150.0d0
+    b = 0.0d0
+    c = 0.0d0
+    dfH0 = -846.433
+    h_ucl3 = calc_h(T,a,b,c,dfH0)
   endfunction h_ucl3
   
   real(8) function h_pucl3(T)
     real(8) :: T
+    real(8) :: a,b,c,dfH0
     
+    a = 144.0d0
+    b = 0.0d0
+    c = 0.0d0
+    dfH0 = -931.116d0
+    h_pucl3 = calc_h(T,a,b,c,dfH0)
   endfunction h_pucl3
-  ! updatedadsfasdf
-  ! hello
 
   real(8) function calc_h(T,a,b,c,dfH0)
     real(8) :: T,a,b,c,dfH0

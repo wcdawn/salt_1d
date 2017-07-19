@@ -1,23 +1,15 @@
 # Makefile
 
 FC = gfortran
-FFLAGS = -O2 -fbacktrace -fbounds-check
+FLAGS = -Wall
+OBJS = saltprops.o salt_1d.o
+EXEC = salt_1d.exe
 
-.SUFFIXES : .f90 .o
+$(EXEC) : $(OBJS)
+	$(FC) $(FLAGS) -o $(EXEC) $(OBJS)
 
-default : salt_1d.exe
+%.o : %.f90
+	$(FC) $(FLAGS) -c $<
 
-.f90.o :
-	$(FC) $(FFLAGS) -c $*.f90
-
-salt_1d.exe : saltprops.o salt_1d.o
-	$(FC) $(FFLAGS) saltprops.o salt_1d.o -o $@
-
-clean :
-	rm -f core *.o *.mod *.exe
-
-query :
-	cvs -n update -P
-
-update : 
-	cvs update -P
+clean:
+	rm -f *.exe *.o *.mod

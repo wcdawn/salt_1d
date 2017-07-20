@@ -32,31 +32,27 @@ contains
 ! a     coefficient for calculation of cp = a + b*T + c*T**2  [kJ/K/mol]
 ! b     coefficient for calculation of cp = a + b*T + c*T**2  [kJ/K/mol]
 ! c     coefficient for calculation of cp = a + b*T + c*T**2  [kJ/K/mol]
-! dfH0  standard enthalpy of formation                        [kJ/mol]
 !-------------------------------------------------------------------------------
   real(8) function h_nacl(T)
     character(*),parameter :: myName = 'h_nacl'
     real(8) :: T
-    real(8) :: a,b,c,dfH0
+    real(8) :: a,b,c
     
     if ((T >= 298.0d0) .and. (T <= 1500.0d0)) then
       a = 77.7638d-3
       b = -0.0075312d-3
       c = 0.0d-3
-      dfH0 = -394.956d0
     elseif ((T > 1500.0d0) .and. (T <= 2000.0d0)) then
       a = 66.944d-3
       b = 0.0d-3
       c = 0.0d-3
-      dfH0 = -390.090d0
     else
       msg = ''
       write(msg(1),'(a)') 'Temperature out of bounds. Limit 298 < T < 2000'
       write(msg(2),'(a,e12.6)') 'T = ', T
       call raise_fatal(modName,myName,msg)
     endif
-    h_nacl = h_abc(T,a,b,c,dfH0)
-    write(10,'(e12.6)') h_nacl
+    h_nacl = h_abc(T,a,b,c)
   endfunction h_nacl
   
 !-------------------------------------------------------------------------------
@@ -72,18 +68,15 @@ contains
 ! a     coefficient for calculation of cp = a + b*T + c*T**2  [kJ/K/mol]
 ! b     coefficient for calculation of cp = a + b*T + c*T**2  [kJ/K/mol]
 ! c     coefficient for calculation of cp = a + b*T + c*T**2  [kJ/K/mol]
-! dfH0  standard enthalpy of formation                        [kJ/mol]
 !-------------------------------------------------------------------------------
   real(8) function h_ucl3(T)
     real(8) :: T
-    real(8) :: a,b,c,dfH0
+    real(8) :: a,b,c
     
     a = 150.0d-3
     b = 0.0d-3
     c = 0.0d-3
-    dfH0 = -846.433d0
-    h_ucl3 = h_abc(T,a,b,c,dfH0)
-    write(10,'(e12.6)') h_ucl3
+    h_ucl3 = h_abc(T,a,b,c)
   endfunction h_ucl3
   
 !-------------------------------------------------------------------------------
@@ -98,24 +91,21 @@ contains
 ! a     coefficient for calculation of cp = a + b*T + c*T**2  [kJ/K/mol]
 ! b     coefficient for calculation of cp = a + b*T + c*T**2  [kJ/K/mol]
 ! c     coefficient for calculation of cp = a + b*T + c*T**2  [kJ/K/mol]
-! dfH0  standard enthalpy of formation                        [kJ/mol]
 !-------------------------------------------------------------------------------
   real(8) function h_pucl3(T)
     real(8) :: T
-    real(8) :: a,b,c,dfH0
+    real(8) :: a,b,c
     
     a = 144.0d-3
     b = 0.0d-3
     c = 0.0d-3
-    dfH0 = -931.116d0
-    h_pucl3 = h_abc(T,a,b,c,dfH0)
-    write(10,'(e12.6)') h_pucl3
+    h_pucl3 = h_abc(T,a,b,c)
   endfunction h_pucl3
 
 !-------------------------------------------------------------------------------
-! calculate molar enthalpy given coefficients a,b,c, specific heat of formation,
-! and a temperature. assuming base temperature of 298 K.
-! equation of the form h = dfH0 + integral(cp(T),from=298K,to=T)
+! calculate molar enthalpy given coefficients a,b, and c.
+! absolute enthalpies referenced to T0=273.15K
+! equation of the form h = integral(cp(T),from=2731.5K,to=T)
 !
 ! arguments --------------------------------------------------------------------
 ! T      temperature in Kelvin
@@ -128,14 +118,13 @@ contains
 ! cp_int  integral of cp
 ! dT      difference between temperature and reference temperature  [K]
 !-------------------------------------------------------------------------------
-  real(8) function h_abc(T,a,b,c,dfH0)
-    real(8) :: T,a,b,c,dfH0
+  real(8) function h_abc(T,a,b,c)
+    real(8) :: T,a,b,c
     real(8) :: cp_int,dT
     
-    dT = T - 298.0d0
+    dT = T - 273.15d0
     cp_int   = a * dT + 0.5d0 * b * dT ** 2.0d0 + (1.0d0 / 3.0d0) * c * dT ** 3.0d0
-    h_abc = dfH0 + cp_int
-    write(10,*) 'dfH0',dfH0,' cp_int ',cp_int
+    h_abc = cp_int
   endfunction h_abc
   
 !-------------------------------------------------------------------------------
@@ -169,7 +158,6 @@ contains
     
     call return_weight_binary(x_ucl3,x_arr,ilo,weight)
     hmix_ucl3_nacl = linear_interpolate(hmix_arr,ilo,weight)
-    write(10,'(e12.6)') hmix_ucl3_nacl
   endfunction hmix_ucl3_nacl
   
 !-------------------------------------------------------------------------------

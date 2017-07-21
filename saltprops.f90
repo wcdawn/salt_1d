@@ -243,7 +243,7 @@ contains
     integer,intent(out) :: ilo
     real(8),intent(out) :: weight
     integer :: lower,upper,i
-    logical :: found = .false.
+    logical :: found
     
     if ((x > arr(size(arr))) .or. (x < arr(1))) then
       msg = ''
@@ -255,6 +255,7 @@ contains
     endif    
     lower = 1
     upper = size(arr)
+    found = .false.
     do while (.not. found)
       i = (upper + lower) / 2
       if ((x > arr(i)) .and. (x < arr(upper))) then
@@ -277,6 +278,10 @@ contains
           write(msg(1),'(a)') 'bad weight'
           write(msg(2),'(a,e12.6)') 'weight = ',weight
           call raise_fatal(modName,myName,msg)
+        elseif ((ilo < 1) .or. (ilo > (size(arr) - 1))) then
+          msg = ''
+          write(msg(1),'(a)') 'bad ilo'
+          write(msg(2),'(a,i10)') 'ilo = ',ilo
         endif
       endif
     enddo
@@ -298,6 +303,7 @@ contains
     integer :: ilo
     real(8) :: weight
     
+    write(20,*) ilo,weight
     linear_interpolate = arr(ilo) + weight * (arr(ilo + 1) - arr(ilo))
   endfunction linear_interpolate
   

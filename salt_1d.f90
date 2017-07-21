@@ -17,10 +17,7 @@ nStep = 100
 dt = (thi - tlo) / real((nStep - 1),8)
 T = tlo
 do i = 1,nStep
-  ! write(*,*) T
-  ! write(*,*) calc_h(T)
-  write(*,'(2e13.6)')  T, calc_h(T)
-  write(*,*) 'here'
+  write(10,'(2e13.6)')  T, calc_h(T)
   T = T + dt
 enddo
 

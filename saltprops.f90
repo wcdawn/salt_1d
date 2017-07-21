@@ -178,14 +178,13 @@ contains
 ! m_pucl3  molar mass of PuCl3 (344.4086)         [gm/mol]
 ! m_mol    molar mass of PuCl3-UCl3-NaCl system   [kg/mol]
 !-------------------------------------------------------------------------------
-  real(8) function calc_h(T)!,u_nacl,u_ucl3,u_pucl3)
+  real(8) function calc_h(T,u_nacl,u_ucl3,u_pucl3)
     character(*),parameter :: myName = 'calc_h'
     real(8) :: T
-    ! real(8),optional :: u_nacl,u_ucl3,u_pucl3
+    real(8),optional :: u_nacl,u_ucl3,u_pucl3
     real(8) :: x_nacl,x_ucl3,x_pucl3
     real(8) :: m_nacl,m_ucl3,m_pucl3,m_mol
     
-    write(20,*) myName,T
     ! calculate molar masses based on elemental consituents
     m_nacl = 22.989769280d0 + 35.4530d0
     m_ucl3 = 238.028910d0 + 3.0d0 * 35.4530d0
@@ -194,23 +193,23 @@ contains
     x_nacl = (10.d0 / 19.0d0)
     x_ucl3 = (8.0d0 / 19.0d0)
     x_pucl3 = 1.0d0 - x_nacl - x_ucl3
-    ! if (present(u_nacl)) then
-      ! if ((.not. present(u_pucl3)) .or. (.not. present(u_nacl))) then
-        ! msg = ''
-        ! write(msg(1),'(a)') 'if one user specified mole fraction is' // &
-          ! ' present then, all must be present'
-        ! call raise_fatal(modName,myName,msg)
-      ! elseif ((u_nacl + u_ucl3 + u_pucl3) /= 1.0d0) then
-        ! msg = ''
-        ! write(msg(1),'(a)') 'sum of user specified mole fraction /= 1.0d0'
-        ! write(msg(2),'(a,e12.6)') 'sum = ',(u_ucl3 + u_pucl3 + u_nacl)
-        ! call raise_fatal(modName,myName,msg)
-      ! endif
+    if (present(u_nacl)) then
+      if ((.not. present(u_pucl3)) .or. (.not. present(u_nacl))) then
+        msg = ''
+        write(msg(1),'(a)') 'if one user specified mole fraction is' // &
+          ' present then, all must be present'
+        call raise_fatal(modName,myName,msg)
+      elseif ((u_nacl + u_ucl3 + u_pucl3) /= 1.0d0) then
+        msg = ''
+        write(msg(1),'(a)') 'sum of user specified mole fraction /= 1.0d0'
+        write(msg(2),'(a,e12.6)') 'sum = ',(u_ucl3 + u_pucl3 + u_nacl)
+        call raise_fatal(modName,myName,msg)
+      endif
       ! overwrite default mole fractions
-      ! x_nacl = u_nacl
-      ! x_ucl3 = u_ucl3
-      ! x_pucl3 = u_pucl3
-    ! endif
+      x_nacl = u_nacl
+      x_ucl3 = u_ucl3
+      x_pucl3 = u_pucl3
+    endif
     ! calculate molar mass of system
     m_mol = (m_nacl * x_nacl + m_ucl3 * x_ucl3 + m_pucl3 * x_pucl3) * 1.0d-3
     ! calculate molar enthalpy of system
@@ -273,18 +272,18 @@ contains
         found = .true.
         ilo = i
         weight = (x - arr(i)) / (arr(i + 1) - arr(i))
-        if ((weight > 1.0d0) .or. (weight < 0.0d0)) then
-          msg = ''
-          write(msg(1),'(a)') 'bad weight'
-          write(msg(2),'(a,e12.6)') 'weight = ',weight
-          call raise_fatal(modName,myName,msg)
-        elseif ((ilo < 1) .or. (ilo > (size(arr) - 1))) then
-          msg = ''
-          write(msg(1),'(a)') 'bad ilo'
-          write(msg(2),'(a,i10)') 'ilo = ',ilo
-        endif
       endif
     enddo
+    if ((weight > 1.0d0) .or. (weight < 0.0d0)) then
+      msg = ''
+      write(msg(1),'(a)') 'bad weight'
+      write(msg(2),'(a,e12.6)') 'weight = ',weight
+      call raise_fatal(modName,myName,msg)
+    elseif ((ilo < 1) .or. (ilo > (size(arr) - 1))) then
+      msg = ''
+      write(msg(1),'(a)') 'bad ilo'
+      write(msg(2),'(a,i10)') 'ilo = ',ilo
+    endif
   endsubroutine return_weight_binary
   
 !-------------------------------------------------------------------------------
@@ -303,7 +302,6 @@ contains
     integer :: ilo
     real(8) :: weight
     
-    write(20,*) ilo,weight
     linear_interpolate = arr(ilo) + weight * (arr(ilo + 1) - arr(ilo))
   endfunction linear_interpolate
   

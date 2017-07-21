@@ -15,10 +15,8 @@ public :: calc_h
 character(*),parameter :: modName = 'saltprops'
 contains 
 ! TO-DO:
-!        work on multiplying by number of moles
 !        add abstraction to allow for different functions later
 !        add reverse function calc_T
-!        get positive numbers
 
 !-------------------------------------------------------------------------------
 ! calculate molar enthalpy of NaCl
@@ -105,7 +103,7 @@ contains
 !-------------------------------------------------------------------------------
 ! calculate molar enthalpy given coefficients a,b, and c.
 ! absolute enthalpies referenced to T0=273.15K
-! equation of the form h = integral(cp(T),from=2731.5K,to=T)
+! equation of the form h = integral(cp(T),from=273.15K,to=T)
 !
 ! arguments --------------------------------------------------------------------
 ! T      temperature in Kelvin
@@ -167,7 +165,7 @@ contains
 !
 ! arguments --------------------------------------------------------------------
 ! T       temperature of system     [K]
-! calc_h  molar enthalpy of system  [kJ/mol]
+! calc_h  specific enthalpy of system  [kJ/kg]
 !   u_nacl   user specified mole fraction of NaCl
 !   u_ucl3   user specified mole fraction of UCl3
 !   u_pucl3  user specified mole fraction of PuCl3
@@ -175,41 +173,50 @@ contains
 ! x_nacl   mole fraction of NaCl (default=10/19)
 ! x_ucl3   mole fraction of UCl3 (default=8/19)
 ! x_pucl3  mole fraction of PuCl3 (default=1/19)
-! TO-DO: clean this up
+! m_nacl   molar mass of NaCl (58.4428)           [gm/mol]
+! m_ucl3   molar mass of UCl3 (344.3879)          [gm/mol]
+! m_pucl3  molar mass of PuCl3 (344.4086)         [gm/mol]
+! m_mol    molar mass of PuCl3-UCl3-NaCl system   [kg/mol]
 !-------------------------------------------------------------------------------
-  real(8) function calc_h(T,u_nacl,u_ucl3,u_pucl3)
+  real(8) function calc_h(T)!,u_nacl,u_ucl3,u_pucl3)
     character(*),parameter :: myName = 'calc_h'
     real(8) :: T
+    ! real(8),optional :: u_nacl,u_ucl3,u_pucl3
     real(8) :: x_nacl,x_ucl3,x_pucl3
-    real(8),optional :: u_nacl,u_ucl3,u_pucl3
     real(8) :: m_nacl,m_ucl3,m_pucl3,m_mol
-    real(8) :: nmol = 19.0d0
     
+    write(20,*) myName,T
+    ! calculate molar masses based on elemental consituents
     m_nacl = 22.989769280d0 + 35.4530d0
     m_ucl3 = 238.028910d0 + 3.0d0 * 35.4530d0
     m_pucl3 = 238.0495599d0 + 3.0d0 * 35.4530d0
+    ! set default mole fractions
     x_nacl = (10.d0 / 19.0d0)
     x_ucl3 = (8.0d0 / 19.0d0)
     x_pucl3 = 1.0d0 - x_nacl - x_ucl3
-    if (present(u_nacl)) then
-      if ((.not. present(u_pucl3)) .or. (.not. present(u_nacl))) then
-        msg = ''
-        write(msg(1),'(a)') 'if one user specified mole fraction is present'
-        write(msg(2),'(a)') 'then, all must be present'
-        call raise_fatal(modName,myName,msg)
-      elseif ((u_nacl + u_ucl3 + u_pucl3) /= 1.0d0) then
-        msg = ''
-        write(msg(1),'(a)') 'sum of user specified mole fraction /= 1.0d0'
-        write(msg(2),'(a,e12.6)') 'sum = ',(u_ucl3 + u_pucl3 + u_nacl)
-        call raise_fatal(modName,myName,msg)
-      endif
-      x_nacl = u_nacl
-      x_ucl3 = u_ucl3
-      x_pucl3 = u_pucl3
-    endif
-    m_mol = (m_nacl * x_nacl + m_ucl3 * x_ucl3 + m_pucl3 * x_pucl3) * nmol * 1.0d-3
+    ! if (present(u_nacl)) then
+      ! if ((.not. present(u_pucl3)) .or. (.not. present(u_nacl))) then
+        ! msg = ''
+        ! write(msg(1),'(a)') 'if one user specified mole fraction is' // &
+          ! ' present then, all must be present'
+        ! call raise_fatal(modName,myName,msg)
+      ! elseif ((u_nacl + u_ucl3 + u_pucl3) /= 1.0d0) then
+        ! msg = ''
+        ! write(msg(1),'(a)') 'sum of user specified mole fraction /= 1.0d0'
+        ! write(msg(2),'(a,e12.6)') 'sum = ',(u_ucl3 + u_pucl3 + u_nacl)
+        ! call raise_fatal(modName,myName,msg)
+      ! endif
+      ! overwrite default mole fractions
+      ! x_nacl = u_nacl
+      ! x_ucl3 = u_ucl3
+      ! x_pucl3 = u_pucl3
+    ! endif
+    ! calculate molar mass of system
+    m_mol = (m_nacl * x_nacl + m_ucl3 * x_ucl3 + m_pucl3 * x_pucl3) * 1.0d-3
+    ! calculate molar enthalpy of system
     calc_h = x_nacl * h_nacl(T) + x_ucl3 * h_ucl3(T) + x_pucl3 * h_pucl3(T) + &
-      hmix_ucl3_nacl(x_ucl3)
+      hmix_ucl3_nacl(x_ucl3 + x_pucl3)
+    ! convert molar enthalpy to specific enthalpy
     calc_h = calc_h * (1.0d0 / m_mol)
   endfunction calc_h
   

@@ -1,5 +1,5 @@
 module exception_handler
-use, intrinsic :: iso_fortran_env, only: output_unit, error_unit
+use, intrinsic :: iso_fortran_env, only: error_unit, output_unit
 implicit none
 character(500),dimension(10) :: msg
 
@@ -34,15 +34,15 @@ contains
     character(*),dimension(:),intent(in) :: msg
     integer :: i
     
-    write(output_unit,*)
-    write(output_unit,'(4a)') 'warn -- ',modName,' -- ',myName
+    write(error_unit,*)
+    write(error_unit,'(4a)') 'warn -- ',modName,' -- ',myName
     do i = 1,size(msg)
       if (trim(msg(i)) == '') then
         exit
       endif
-      write(output_unit,'(a)') trim(msg(i))
+      write(error_unit,'(a)') trim(msg(i))
     enddo
-    write(output_unit,*)
+    write(error_unit,*)
     endsubroutine raise_warning
     
 endmodule exception_handler

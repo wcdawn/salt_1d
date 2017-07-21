@@ -6,7 +6,7 @@ implicit none
 ! real(8) :: T,dt
 ! integer :: i,nStep
 real(8) :: alpha,beta,gamma,delta
-
+real(8) :: h
 ! tlo = 470.0d0 + 273.15d0 ! [K]
 ! thi = 650.0d0 + 273.15d0 ! [K]
 ! nStep = 100
@@ -17,11 +17,12 @@ real(8) :: alpha,beta,gamma,delta
   ! T = T + dt
 ! enddo
 
-write(*,*) calc_T(200.0d0)
-alpha = 1.0d0
-beta  = -3.0d0
-gamma = -144.0d0
-delta = 432.0d0
-write(*,*) cubic_solve(alpha,beta,gamma,delta)
+h = 200.0d0
+write(*,*) calc_T(h)
+alpha = 0.0d0
+beta  = 2.0d0
+gamma = 4.0d0
+delta = -4.0d0
+write(*,*) cubic_solve(alpha,beta,gamma,delta,RealPos=.true.)
 
 endprogram salt_1d

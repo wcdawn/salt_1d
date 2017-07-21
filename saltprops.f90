@@ -25,6 +25,8 @@ contains
 !        add abstraction to allow for different functions later
 !        add reverse function calc_T
 !        add .APPROXEQ. see .../Futility/src/IntrType.f90
+!        fix cubic_solve add option for positive real root
+!        clarify when h is molar and specific (hm vs. h)
 
 !-------------------------------------------------------------------------------
 ! calculate molar enthalpy of NaCl
@@ -148,9 +150,7 @@ contains
   endfunction hmix_ucl3_nacl
   
 !-------------------------------------------------------------------------------
-! calculate molar enthalpy of PuCl3-UCl3-NaCl system
-! default mole fractions are assumed fror 1*PuCl3-8*UCl3-10*NaCl as reported in 
-! "Reator with very low fission product inventory" M. Taube, W. Heer, 1980
+! calculate speicific enthalpy of PuCl3-UCl3-NaCl system
 !
 ! arguments --------------------------------------------------------------------
 ! T       temperature of system     [K]
@@ -159,9 +159,9 @@ contains
 !   u_ucl3   user specified mole fraction of UCl3
 !   u_pucl3  user specified mole fraction of PuCl3
 ! local variables --------------------------------------------------------------
-! x_nacl   mole fraction of NaCl (default=10/19)
-! x_ucl3   mole fraction of UCl3 (default=8/19)
-! x_pucl3  mole fraction of PuCl3 (default=1/19)
+! x_nacl   mole fraction of NaCl
+! x_ucl3   mole fraction of UCl3
+! x_pucl3  mole fraction of PuCl3
 !-------------------------------------------------------------------------------
   real(8) function calc_h(T,u_nacl,u_ucl3,u_pucl3)
     character(*),parameter :: myName = 'calc_h'
@@ -296,11 +296,21 @@ contains
 ! disc   discriminant for true cubic and true quadratic
 ! disc0  discriminant0 for true cubic
 !-------------------------------------------------------------------------------
-  real(8) function cubic_solve(alpha,beta,gamma,delta)
+  real(8) function cubic_solve(alpha,beta,gamma,delta,RealPos)
     character(*),parameter :: myName = 'cubic_solve'
     real(8) :: alpha,beta,gamma,delta
+    logical,optional :: RealPos
+    logical :: isRealPos
     real(8) :: disc,disc0
+    real(8) :: r1,r2,r3
     
+    if (present(RealPos)) then
+      isRealPos = RealPos
+      write(*,*) 'hello'
+    else
+      isRealPos = .false.
+      write(*,*) 'false'
+    endif
     if (alpha /= 0.0d0) then
       ! true cubic
       disc = 18.0d0 * alpha * beta * gamma * delta - &
@@ -311,12 +321,16 @@ contains
       if ((disc == 0.0d0) .and. (disc0 == 0.0d0)) then
         ! equation has a single, triple-root
         cubic_solve = (-1.0d0) * (beta / (3.0d0 * alpha))
+      elseif (isRealPos) then
+        ! TO-DO: add multiple root sols for cubic
       else
         msg = ''
         write(msg(1),f1) 'equation is a true cubic but has multiple sols'
         write(msg(2),f1) 'it is required that disc=disc0=0.0 for unique sol'
         write(msg(3),f2) 'disc  = ',disc
         write(msg(4),f2) 'disc0 = ',disc0
+        write(msg(5),f1) 'i can try to force a real & positive solution by' // &
+          ' passing RealPos=.true.'
         call raise_fatal(modName,myName,msg)
       endif
     elseif (beta /= 0.0d0) then
@@ -325,11 +339,47 @@ contains
       if (disc == 0.0d0) then
         ! equation has a single, double root
         cubic_solve = (-1.0d0) * (gamma / (2.0d0 * beta))
+      elseif (isRealPos) then
+        if (disc < 0.0d0) then
+          msg = ''
+          write(msg(1),f1) 'equation is a true quadratic and user forced ' // &
+            'real positive solution'
+          write(msg(2),f1) 'however this quadratic has two imaginary roots' // &
+            'because disc < 0.0'
+          write(msg(3),f2) 'disc = ',disc
+          call raise_fatal(modName,myName,msg)
+        else
+          r1 = (((-1.0d0) * gamma) + sqrt(disc)) / (2.0d0 * beta)
+          r2 = (((-1.0d0) * gamma) - sqrt(disc)) / (2.0d0 * beta)
+          if (r2 > 0.0) then
+            msg = ''
+            write(msg(1),f1) 'equation is a true quadratic and user forced' // &
+              ' real positive solution'
+            write(msg(2),f1) 'however this equation has two positive roots'
+            write(msg(3),f2) 'r1 = ',r1
+            write(msg(4),f2) 'r2 = ',r2
+            write(msg(5),f1) 'nice try...'
+            call raise_fatal(modName,myName,msg)
+          elseif (r1 < 0.0) then
+            msg = ''
+            write(msg(1),f1) 'equation is a true quadratic and user forced' // &
+              ' real positive solution'
+            write(msg(2),f1) 'however this equation has two negative roots'
+            write(msg(3),f2) 'r1 = ',r1
+            write(msg(4),f2) 'r2 = ',r2
+            write(msg(5),f1) 'nice try...'
+            call raise_fatal(modName,myName,msg)
+          else
+            cubic_solve = r1
+          endif
+        endif
       else
         msg = ''
         write(msg(1),f1) 'equation is a true quadratic but has multiple sols'
         write(msg(2),f1) 'it is required that disc=0.0 for unique sol'
         write(msg(3),f2) 'disc = ',disc
+        write(msg(4),f1) 'i can try to force a real & positive solution by' // &
+          ' passing RealPos=.true.'
         call raise_fatal(modName,myName,msg)
       endif
     elseif (gamma /= 0.0d0) then
@@ -347,17 +397,38 @@ contains
     endif
   endfunction cubic_solve
 
-! TO-DO: document
-  real(8) function calc_T(h,u_nacl,u_ucl3,u_pucl3)
+!-------------------------------------------------------------------------------
+! calculate salt temperature for given enthalpy
+! assumes a salt composed of PuCl3-UCl3-NaCl but mole fractions may be specified
+!
+! arguments --------------------------------------------------------------------
+! h_in    speicifc enthalpy input  [kJ/kg]
+! calc_T  temperature              [K]
+!   u_nacl   user specified mole fraction of NaCl
+!   u_ucl3   user specified mole fraction of UCl3
+!   u_pucl3  user specified mole fraction of PuCl3
+! local variables --------------------------------------------------------------
+! hm  molar enthalpy [kJ/mol]
+! h   specific enthalpy [kJ/kg]
+! suma  sum of a coefficinents from cp calculation cp=a+b*T+c*T**2
+! sumb  sum of b coefficinents from cp calculation cp=a+b*T+c*T**2
+! sumc  sum of c coefficinents from cp calculation cp=a+b*T+c*T**2
+! x_nacl   mole fraction of NaCl
+! x_ucl3   mole fraction of UCl3
+! x_pucl3  mole fraction of PuCl3
+!-------------------------------------------------------------------------------
+  real(8) function calc_T(hin,u_nacl,u_ucl3,u_pucl3)
     character(*),parameter :: myName = 'calc_T'
-    real(8) :: h
+    real(8) :: hin
     real(8),optional :: u_nacl,u_ucl3,u_pucl3
+    real(8) :: hm,h
     real(8) :: suma,sumb,sumc
-    real(8) :: nacl_a,nacl_b,nacl_c
-    real(8) :: ucl3_a,ucl3_b,ucl3_c
-    real(8) :: pucl3_a,pucl3_b,pucl3_c
+    real(8) :: nacl_a,nacl_b,nacl_c    ! used for sums
+    real(8) :: ucl3_a,ucl3_b,ucl3_c    ! used for sums
+    real(8) :: pucl3_a,pucl3_b,pucl3_c ! used for sums
     real(8) :: x_nacl,x_ucl3,x_pucl3
     
+    h = hin
     call x_default(x_nacl,x_ucl3,x_pucl3)
     if (present(u_nacl)) then
       if ((.not. present(u_pucl3)) .or. (.not. present(u_nacl))) then
@@ -377,20 +448,31 @@ contains
       x_pucl3 = u_pucl3
     endif
     ! TO-DO: fix temperature in nacl_abc call
-    call nacl_abc(1000.0d0,nacl_a,nacl_b,nacl_c)
+    call nacl_abc(1750.0d0,nacl_a,nacl_b,nacl_c)
     call ucl3_abc(ucl3_a,ucl3_b,ucl3_c)
     call pucl3_abc(pucl3_a,pucl3_b,pucl3_c)
     suma = x_nacl * nacl_a + x_ucl3 * ucl3_a + x_pucl3 * pucl3_a
     sumb = x_nacl * nacl_b + x_ucl3 * ucl3_b + x_pucl3 * pucl3_b
     sumc = x_nacl * nacl_c + x_ucl3 * ucl3_c + x_pucl3 * pucl3_c
-    h = h * molar_mass(x_nacl,x_ucl3,x_pucl3)
-    ! TO-DO: convert h to kJ/mol for this equation to be true
-    calc_T = cubic_solve(sumc,sumb,suma,(hmix_ucl3_nacl(x_ucl3 + x_pucl3) - h))
+    hm = h * molar_mass(x_nacl,x_ucl3,x_pucl3)
+    calc_T = cubic_solve(sumc,sumb,suma,(hmix_ucl3_nacl(x_ucl3 + x_pucl3) - hm), &
+      RealPos=.true.)
     msg = ''
     write(msg(1),f1) 'calc_T not yet supported'
     call raise_warning(modName,myName,msg)
   endfunction calc_T
-  
+
+!-------------------------------------------------------------------------------
+! return default mole fractions for soft reactor
+! based on 1*PuCl3-8*UCl3-10*NaCl from 
+! "Reator with very low fission product inventory" M. Taube, W. Heer, 1980
+!
+! arguments --------------------------------------------------------------------
+! x_nacl   mole fraction NaCl
+! x_ucl3   mole fraction UCl3
+! x_pucl3  mole fraction PuCl3}
+! local variables --------------------------------------------------------------
+!-------------------------------------------------------------------------------
   subroutine x_default(x_nacl,x_ucl3,x_pucl3)
     real(8),intent(out) :: x_nacl,x_ucl3,x_pucl3
     
@@ -476,11 +558,25 @@ contains
     c = 0.0d-3
   endsubroutine pucl3_abc
 
+!-------------------------------------------------------------------------------
+! calculate molar mass of a PuCl3-UCl3-NaCl system given mole fractions
+! output value in [kg/mol]
+!
+! arguments --------------------------------------------------------------------
+! x_nacl   mole fraction NaCl
+! x_ucl3   mole fraction UCl3
+! x_pucl3  mole fraction PuCl3
+! local variables --------------------------------------------------------------
+! m_nacl   molar mass NaCl   [gm/mol]
+! m_ucl3   molar mass UCl3   [gm/mol]
+! m_pucl3  molar mass PuCl3  [gm/mol]
+!-------------------------------------------------------------------------------
   real(8) function molar_mass(x_nacl,x_ucl3,x_pucl3)
     character(*),parameter :: myName = 'molar_mass'
     real(8) :: x_nacl,x_ucl3,x_pucl3
     real(8) :: m_nacl,m_ucl3,m_pucl3
     
+    ! check to make sure mole fractions sum to 1.0
     if ((x_nacl + x_ucl3 + x_pucl3) /= 1.0d0) then
       msg = ''
       write(msg(1),f1) 'sum of mole fractions /= 1.0d0'
@@ -491,6 +587,7 @@ contains
     m_nacl = 22.989769280d0 + 35.4530d0
     m_ucl3 = 238.028910d0 + 3.0d0 * 35.4530d0
     m_pucl3 = 238.0495599d0 + 3.0d0 * 35.4530d0
+    ! calculate molar mass and convert from gm to kg
     molar_mass = (x_nacl * m_nacl + x_ucl3 * m_ucl3 + x_pucl3 * m_pucl3) * (1.0d-3)
   endfunction molar_mass
 endmodule saltprops

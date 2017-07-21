@@ -26,6 +26,8 @@ contains
     enddo
     write(error_unit,'(a)') '********************************************************************************'
     write(error_unit,*)
+    ! TO-DO: consider removing this
+    call backtrace()
     stop
   endsubroutine raise_fatal
   
@@ -35,6 +37,7 @@ contains
     integer :: i
     
     write(error_unit,*)
+    write(error_unit,'(a)') '................................................................................'
     write(error_unit,'(4a)') 'warn -- ',modName,' -- ',myName
     do i = 1,size(msg)
       if (trim(msg(i)) == '') then
@@ -42,6 +45,7 @@ contains
       endif
       write(error_unit,'(a)') trim(msg(i))
     enddo
+    write(error_unit,'(a)') '................................................................................'
     write(error_unit,*)
     endsubroutine raise_warning
     

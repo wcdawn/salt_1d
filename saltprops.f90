@@ -29,9 +29,50 @@ contains
 !        clarify when h is molar and specific (hm vs. h)
 
 !-------------------------------------------------------------------------------
-! calculate molar enthalpy of NaCl
+! return coefficients for calculating cp for NaCl
 ! coefficients from "Thermodynamic evaluation of the NaCl-MgCl2-Ucl3-PuCl3 system"
 !   O. Benes, R.J.M. Konings, 2008
+!
+! arguments --------------------------------------------------------------------
+! T  temperature                                     [K]
+! a  coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
+! b  coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
+! c  coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
+! local variables --------------------------------------------------------------
+!-------------------------------------------------------------------------------
+  subroutine nacl_abc(T,a,b,c)
+    character(*),parameter :: myName = 'h_nacl_abc'
+    real(8),intent(in) :: T
+    real(8),intent(out) :: a,b,c
+    
+    ! TO-DO: repair
+    ! if ((T >= 298.0d0) .and. (T <= 1500.0d0)) then
+    if ((T <= 1500.0d0)) then
+      a = 77.7638d-3
+      b = -0.0075312d-3
+      c = 0.0d-3
+    ! elseif ((T > 1500.0d0) .and. (T <= 2000.0d0)) then
+    elseif ((T > 1500.0d0)) then
+      msg = ''
+      write(msg(1),f1) 'this set of NaCl properties is not properly ' // &
+        'incorporated into the codebase'
+      write(msg(2),f1) 'integrating this function will yield a moderatly ' // &
+        'incorrect result'
+      call raise_warning(modName,myName,msg)
+      a = 66.944d-3
+      b = 0.0d-3
+      c = 0.0d-3
+    else
+      msg = ''
+      write(msg(1),f1) 'Temperature out of bounds. Limit 298 < T < 2000'
+      write(msg(2),f2) 'T = ', T
+      ! call raise_fatal(modName,myName,msg)
+      call raise_warning(modName,myName,msg)
+    endif
+  endsubroutine nacl_abc
+
+!-------------------------------------------------------------------------------
+! calculate molar enthalpy of NaCl
 !
 ! arguments --------------------------------------------------------------------
 ! T       temperature             [K]
@@ -48,12 +89,29 @@ contains
     call nacl_abc(T,a,b,c)
     h_nacl = h_abc(T,a,b,c)
   endfunction h_nacl
-  
+
 !-------------------------------------------------------------------------------
-! calculate molar enthalpy of UCl3
+! return coefficients for calculating cp for UCl3
 ! coefficients from "Thermodynamic evaluation of the NaCl-MgCl2-Ucl3-PuCl3 system"
 !   O. Benes, R.J.M. Konings, 2008
 ! these coefficients are noted as "Estimated"
+!
+! arguments --------------------------------------------------------------------
+! a  coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
+! b  coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
+! c  coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
+! local variables --------------------------------------------------------------
+!-------------------------------------------------------------------------------
+  subroutine ucl3_abc(a,b,c)
+    real(8),intent(out) :: a,b,c
+    
+    a = 150.0d-3
+    b = 0.0d-3
+    c = 0.0d-3
+  endsubroutine ucl3_abc
+  
+!-------------------------------------------------------------------------------
+! calculate molar enthalpy of UCl3
 ! 
 ! arguments --------------------------------------------------------------------
 ! T       temperature             [K]
@@ -72,9 +130,26 @@ contains
   endfunction h_ucl3
   
 !-------------------------------------------------------------------------------
-! calculate molar enthalpy of PuCl3
+! return coefficients for calculating cp for PuCl3
 ! coefficients from "Thermodynamic evaluation of the NaCl-MgCl2-Ucl3-PuCl3 system"
 !   O. Benes, R.J.M. Konings, 2008
+!
+! arguments --------------------------------------------------------------------
+! a  coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
+! b  coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
+! c  coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
+! local variables --------------------------------------------------------------
+!-------------------------------------------------------------------------------
+  subroutine pucl3_abc(a,b,c)
+    real(8),intent(out) :: a,b,c
+    
+    a = 144.0d-3
+    b = 0.0d-3
+    c = 0.0d-3
+  endsubroutine pucl3_abc
+  
+!-------------------------------------------------------------------------------
+! calculate molar enthalpy of PuCl3
 !
 ! arguments --------------------------------------------------------------------
 ! T        temperature              [K]
@@ -93,7 +168,7 @@ contains
   endfunction h_pucl3
 
 !-------------------------------------------------------------------------------
-! calculate molar enthalpy given coefficients a,b, and c.
+! calculate molar enthalpy given coefficients a, b, and c.
 ! absolute enthalpies referenced to T0=273.15K
 ! equation of the form h = integral(cp(T),from=273.15K,to=T)
 !
@@ -121,7 +196,7 @@ contains
 ! data from "Enthalpies of mixing in molten UCle-NaCl system"
 !   Haruaki Matsurra et al., 2002
 ! in using this function for a PuCl3-UCl3-NaCl system, PuCl3 mole fraction
-! should be included in x_ucl3
+! should be included in x_ucl3 i.e. x_ucl3 = x_UCl3 + x_PuCl3
 !
 ! arguments --------------------------------------------------------------------
 ! x_ucl3          mole fraction of UCl3 in the UCl3-NaCl system
@@ -296,21 +371,13 @@ contains
 ! disc   discriminant for true cubic and true quadratic
 ! disc0  discriminant0 for true cubic
 !-------------------------------------------------------------------------------
-  real(8) function cubic_solve(alpha,beta,gamma,delta,RealPos)
+  real(8) function cubic_solve(alpha,beta,gamma,delta,umin,umax)
     character(*),parameter :: myName = 'cubic_solve'
     real(8) :: alpha,beta,gamma,delta
-    logical,optional :: RealPos
-    logical :: isRealPos
+    real(8),optional :: umin,umax
     real(8) :: disc,disc0
     real(8) :: r1,r2,r3
     
-    if (present(RealPos)) then
-      isRealPos = RealPos
-      write(*,*) 'hello'
-    else
-      isRealPos = .false.
-      write(*,*) 'false'
-    endif
     if (alpha /= 0.0d0) then
       ! true cubic
       disc = 18.0d0 * alpha * beta * gamma * delta - &
@@ -321,7 +388,7 @@ contains
       if ((disc == 0.0d0) .and. (disc0 == 0.0d0)) then
         ! equation has a single, triple-root
         cubic_solve = (-1.0d0) * (beta / (3.0d0 * alpha))
-      elseif (isRealPos) then
+      ! elseif (isRealPos) then
         ! TO-DO: add multiple root sols for cubic
       else
         msg = ''
@@ -339,48 +406,62 @@ contains
       if (disc == 0.0d0) then
         ! equation has a single, double root
         cubic_solve = (-1.0d0) * (gamma / (2.0d0 * beta))
-      elseif (isRealPos) then
-        if (disc < 0.0d0) then
-          msg = ''
-          write(msg(1),f1) 'equation is a true quadratic and user forced ' // &
-            'real positive solution'
-          write(msg(2),f1) 'however this quadratic has two imaginary roots' // &
-            'because disc < 0.0'
-          write(msg(3),f2) 'disc = ',disc
-          call raise_fatal(modName,myName,msg)
-        else
-          r1 = (((-1.0d0) * gamma) + sqrt(disc)) / (2.0d0 * beta)
-          r2 = (((-1.0d0) * gamma) - sqrt(disc)) / (2.0d0 * beta)
-          if (r2 > 0.0) then
-            msg = ''
-            write(msg(1),f1) 'equation is a true quadratic and user forced' // &
-              ' real positive solution'
-            write(msg(2),f1) 'however this equation has two positive roots'
-            write(msg(3),f2) 'r1 = ',r1
-            write(msg(4),f2) 'r2 = ',r2
-            write(msg(5),f1) 'nice try...'
-            call raise_fatal(modName,myName,msg)
-          elseif (r1 < 0.0) then
-            msg = ''
-            write(msg(1),f1) 'equation is a true quadratic and user forced' // &
-              ' real positive solution'
-            write(msg(2),f1) 'however this equation has two negative roots'
-            write(msg(3),f2) 'r1 = ',r1
-            write(msg(4),f2) 'r2 = ',r2
-            write(msg(5),f1) 'nice try...'
-            call raise_fatal(modName,myName,msg)
-          else
-            cubic_solve = r1
-          endif
-        endif
-      else
-        msg = ''
-        write(msg(1),f1) 'equation is a true quadratic but has multiple sols'
-        write(msg(2),f1) 'it is required that disc=0.0 for unique sol'
+      elseif (disc < 0.0d0) then
+        write(msg(1),f1) 'equation is a true quadratic'
+        write(msg(2),f1) 'this quadratic has two imaginary roots' // &
+          'because disc < 0.0'
         write(msg(3),f2) 'disc = ',disc
-        write(msg(4),f1) 'i can try to force a real & positive solution by' // &
-          ' passing RealPos=.true.'
         call raise_fatal(modName,myName,msg)
+      else
+        r1 = (((-1.0d0) * gamma) + sqrt(disc)) / (2.0d0 * beta)
+        r2 = (((-1.0d0) * gamma) - sqrt(disc)) / (2.0d0 * beta)
+        if (present(umin)) then
+          if (min(r1,r2) < umin) then
+            cubic_solve = max(r1,r2)
+          elseif (present(umax)) then
+            if (max(r1,r2) > umax) then
+              cubic_solve = min(r1,r2)
+            else
+              msg = ''
+              write(msg(1),f1) 'equation is true quadratic and user specified' // &
+                ' umin and umax'
+              write(msg(2),f1) 'however these options didnt eliminate any sols'
+              write(msg(3),f2) 'umin = ',umin
+              write(msg(4),f2) 'umax = ',umax
+              write(msg(5),f2) 'r1 = ',r1
+              write(msg(6),f2) 'r2 = ',r2
+              call raise_fatal(modName,myName,msg)
+            endif
+          else
+            msg = ''
+            write(msg(1),f1) 'equation is true quadratic and user specified umin'
+            write(msg(2),f1) 'however this option didnt eliminate any sols'
+            write(msg(3),f2) 'umin = ',umin
+            write(msg(4),f2) 'r1 = ',r1
+            write(msg(5),f2) 'r2 = ',r2
+            call raise_fatal(modName,myName,msg)
+          endif
+        elseif (present(umax)) then
+          if (max(r1,r2) > umax) then
+            cubic_solve = min(r1,r2)
+          else
+            msg = ''
+            write(msg(1),f1) 'equation is true quadratic and user specified umax'
+            write(msg(2),f1) 'however this option didnt eliminate any sols'
+            write(msg(3),f2) 'umax = ',umax
+            write(msg(4),f2) 'r1 = ',r1
+            write(msg(5),f2) 'r2 = ',r2
+            call raise_fatal(modName,myName,msg)
+          endif
+        else
+          msg = ''
+          write(msg(1),f1) 'equation is true quadratic but has multiple sols'
+          write(msg(2),f1) 'it is required that disc=0.0 for unique sol'
+          write(msg(3),f2) 'disc = ',disc
+          write(msg(4),f1) 'i can try to force a solution by' // &
+            ' speicifying umin or umax'
+          call raise_fatal(modName,myName,msg)
+        endif
       endif
     elseif (gamma /= 0.0d0) then
       ! true linear
@@ -398,8 +479,7 @@ contains
   endfunction cubic_solve
 
 !-------------------------------------------------------------------------------
-! calculate salt temperature for given enthalpy
-! assumes a salt composed of PuCl3-UCl3-NaCl but mole fractions may be specified
+! calculate temperature of PuCl3-UCl3-NaCl system
 !
 ! arguments --------------------------------------------------------------------
 ! h_in    speicifc enthalpy input  [kJ/kg]
@@ -448,15 +528,18 @@ contains
       x_pucl3 = u_pucl3
     endif
     ! TO-DO: fix temperature in nacl_abc call
-    call nacl_abc(1750.0d0,nacl_a,nacl_b,nacl_c)
+    call nacl_abc(1000.0d0,nacl_a,nacl_b,nacl_c)
     call ucl3_abc(ucl3_a,ucl3_b,ucl3_c)
     call pucl3_abc(pucl3_a,pucl3_b,pucl3_c)
     suma = x_nacl * nacl_a + x_ucl3 * ucl3_a + x_pucl3 * pucl3_a
     sumb = x_nacl * nacl_b + x_ucl3 * ucl3_b + x_pucl3 * pucl3_b
     sumc = x_nacl * nacl_c + x_ucl3 * ucl3_c + x_pucl3 * pucl3_c
     hm = h * molar_mass(x_nacl,x_ucl3,x_pucl3)
+    ! 0 = sumc*(1/3)*T**3+sumb*(1/2)*T**2+suma*T+(hmix-h)
+    sumc = sumc * (1.0d0 / 3.0d0)
+    sumb = sumb * 0.5d0
     calc_T = cubic_solve(sumc,sumb,suma,(hmix_ucl3_nacl(x_ucl3 + x_pucl3) - hm), &
-      RealPos=.true.)
+      umin=298.0d0,umax=2.0d3)
     msg = ''
     write(msg(1),f1) 'calc_T not yet supported'
     call raise_warning(modName,myName,msg)
@@ -480,83 +563,6 @@ contains
     x_ucl3  = (8.0d0  / 19.0d0)
     x_pucl3 = (1.0d0  / 19.0d0)
   endsubroutine x_default
-  
-!-------------------------------------------------------------------------------
-! return coefficients for calculating cp for NaCl
-! coefficients from "Thermodynamic evaluation of the NaCl-MgCl2-Ucl3-PuCl3 system"
-!   O. Benes, R.J.M. Konings, 2008
-!
-! arguments --------------------------------------------------------------------
-! T  temperature                                     [K]
-! a  coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
-! b  coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
-! c  coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
-! local variables --------------------------------------------------------------
-!-------------------------------------------------------------------------------
-  subroutine nacl_abc(T,a,b,c)
-    character(*),parameter :: myName = 'h_nacl_abc'
-    real(8),intent(in) :: T
-    real(8),intent(out) :: a,b,c
-    
-    if ((T >= 298.0d0) .and. (T <= 1500.0d0)) then
-      a = 77.7638d-3
-      b = -0.0075312d-3
-      c = 0.0d-3
-    elseif ((T > 1500.0d0) .and. (T <= 2000.0d0)) then
-      msg = ''
-      write(msg(1),f1) 'this set of NaCl properties is not properly ' // &
-        'incorporated into the codebase'
-      write(msg(2),f1) 'integrating this function will yield a moderatly ' // &
-        'incorrect result'
-      call raise_warning(modName,myName,msg)
-      a = 66.944d-3
-      b = 0.0d-3
-      c = 0.0d-3
-    else
-      msg = ''
-      write(msg(1),f1) 'Temperature out of bounds. Limit 298 < T < 2000'
-      write(msg(2),f2) 'T = ', T
-      call raise_fatal(modName,myName,msg)
-    endif
-  endsubroutine nacl_abc
-
-!-------------------------------------------------------------------------------
-! return coefficients for calculating cp for UCl3
-! coefficients from "Thermodynamic evaluation of the NaCl-MgCl2-Ucl3-PuCl3 system"
-!   O. Benes, R.J.M. Konings, 2008
-!
-! arguments --------------------------------------------------------------------
-! a  coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
-! b  coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
-! c  coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
-! local variables --------------------------------------------------------------
-!-------------------------------------------------------------------------------
-  subroutine ucl3_abc(a,b,c)
-    real(8),intent(out) :: a,b,c
-    
-    a = 150.0d-3
-    b = 0.0d-3
-    c = 0.0d-3
-  endsubroutine ucl3_abc
-
-!-------------------------------------------------------------------------------
-! return coefficients for calculating cp for PuCl3
-! coefficients from "Thermodynamic evaluation of the NaCl-MgCl2-Ucl3-PuCl3 system"
-!   O. Benes, R.J.M. Konings, 2008
-!
-! arguments --------------------------------------------------------------------
-! a  coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
-! b  coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
-! c  coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
-! local variables --------------------------------------------------------------
-!-------------------------------------------------------------------------------
-  subroutine pucl3_abc(a,b,c)
-    real(8),intent(out) :: a,b,c
-    
-    a = 144.0d-3
-    b = 0.0d-3
-    c = 0.0d-3
-  endsubroutine pucl3_abc
 
 !-------------------------------------------------------------------------------
 ! calculate molar mass of a PuCl3-UCl3-NaCl system given mole fractions

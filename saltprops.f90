@@ -18,8 +18,6 @@ public :: cubic_solve
 character(*),parameter :: modName = 'saltprops'
 character(*),parameter :: f1 = '(a)'
 character(*),parameter :: f2 = '(a,e12.6)'
-! 101 format(a)       ! plain-text descriptor
-! 102 format(a,e12.6) ! plain-text followed by real
 contains
 ! TO-DO:
 !        add abstraction to allow for different functions later
@@ -45,14 +43,11 @@ contains
     real(8),intent(in) :: T
     real(8),intent(out) :: a,b,c
 
-    ! TO-DO: repair
-    ! if ((T >= 298.0d0) .and. (T <= 1500.0d0)) then
-    if ((T <= 1500.0d0)) then
+    if ((T >= 298.0d0) .and. (T <= 1500.0d0)) then
       a = 77.7638d-3
       b = -0.0075312d-3
       c = 0.0d-3
-    ! elseif ((T > 1500.0d0) .and. (T <= 2000.0d0)) then
-    elseif ((T > 1500.0d0)) then
+    elseif ((T > 1500.0d0) .and. (T <= 2000.0d0)) then
       msg = ''
       write(msg(1),f1) 'this set of NaCl properties is not properly ' // &
         'incorporated into the codebase'
@@ -66,8 +61,7 @@ contains
       msg = ''
       write(msg(1),f1) 'Temperature out of bounds. Limit 298 < T < 2000'
       write(msg(2),f2) 'T = ', T
-      ! call raise_fatal(modName,myName,msg)
-      call raise_warning(modName,myName,msg)
+      call raise_fatal(modName,myName,msg)
     endif
   endsubroutine nacl_abc
 
@@ -169,7 +163,7 @@ contains
 
 !-------------------------------------------------------------------------------
 ! calculate molar enthalpy given coefficients a, b, and c.
-! absolute enthalpies referenced to T0=273.15K
+! absolute enthalpies referenced to h0 = 0.0, T0=273.15K
 ! equation of the form h = integral(cp(T),from=273.15K,to=T)
 !
 ! arguments --------------------------------------------------------------------
@@ -376,7 +370,7 @@ contains
     real(8) :: alpha,beta,gamma,delta
     real(8),optional :: umin,umax
     real(8) :: disc,disc0
-    real(8) :: r1,r2,r3
+    real(8) :: r1,r2!,r3
 
     if (alpha /= 0.0d0) then
       ! true cubic
@@ -535,16 +529,12 @@ contains
     sumb = x_nacl * nacl_b + x_ucl3 * ucl3_b + x_pucl3 * pucl3_b
     sumc = x_nacl * nacl_c + x_ucl3 * ucl3_c + x_pucl3 * pucl3_c
     hm = h * molar_mass(x_nacl,x_ucl3,x_pucl3)
-    ! 0 = sumc*(1/3)*T**3+sumb*(1/2)*T**2+suma*T+(hmix-h)
     sumc = sumc * (1.0d0 / 3.0d0)
     sumb = sumb * 0.5d0
     calc_T = cubic_solve(sumc,sumb,suma,(hmix_ucl3_nacl(x_ucl3 + x_pucl3) - hm), &
-      umin=298.0d0,umax=2.0d3)
+      umin=298.0d0,umax=1.5d3)
     ! adjust units
     calc_T = calc_T + 273.15d0
-    msg = ''
-    write(msg(1),f1) 'calc_T not yet supported'
-    call raise_warning(modName,myName,msg)
   endfunction calc_T
 
 !-------------------------------------------------------------------------------

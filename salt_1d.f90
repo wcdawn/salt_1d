@@ -1,6 +1,6 @@
 program salt_1d
 use saltprops
-use exception_handler
+use func_tools
 implicit none
 
 
@@ -21,8 +21,9 @@ T = tlo
 do i = 1,nStep
   temp = calc_T(calc_h(T))
   ! need a soft-equals function
-  write(*,'(3(e12.6,x),l2)') T, temp, (T - temp), (T == temp)
-  if (abs(T - temp) > tol) then
+  write(*,'(3(e12.6,x),l2)') T, temp, (T - temp), (T .approxeq. temp)
+  ! if (abs(T - temp) > tol) then
+  if (T .approxne. temp) then
     write(*,'(a)') 'T /= calc_T(calc_h(T))'
     write(*,'(a,e12.6)') 'T = ',T
     write(*,'(a,e12.6)') 'calc_T(calc_h(T)) = ', temp
@@ -31,6 +32,8 @@ do i = 1,nStep
   T = T + dt
 enddo
 write(*,'(a)') 'success'
+write(*,*)
+write(*,*) (1.0d0 .approxeq. 2.0d0)
 
 ! open(unit = 11, file = 'h_of_T.out',status = 'replace',action = 'write',iostat = ios)
 ! if (ios /= 0) then

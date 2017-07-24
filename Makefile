@@ -3,7 +3,7 @@
 FC = gfortran
 FLAGS = -Wall -g
 # FLAGS = -Wall
-OBJS = exception_handler.o saltprops.o salt_1d.o
+OBJS = func_tools.o exception_handler.o saltprops.o salt_1d.o
 EXEC = salt_1d.exe
 
 $(EXEC) : $(OBJS)

@@ -33,7 +33,7 @@ do i = 1,nStep
 enddo
 write(*,'(a)') 'success'
 write(*,*)
-write(*,*) (1.0d0 .approxeq. 2.0d0)
+write(*,*) (1.0d0 .approxne. 2.0d0)
 
 ! open(unit = 11, file = 'h_of_T.out',status = 'replace',action = 'write',iostat = ios)
 ! if (ios /= 0) then

@@ -382,16 +382,12 @@ contains
       if ((disc == 0.0d0) .and. (disc0 == 0.0d0)) then
         ! equation has a single, triple-root
         cubic_solve = (-1.0d0) * (beta / (3.0d0 * alpha))
-      ! elseif (isRealPos) then
-        ! TO-DO: add multiple root sols for cubic
       else
         msg = ''
         write(msg(1),f1) 'equation is a true cubic but has multiple sols'
         write(msg(2),f1) 'it is required that disc=disc0=0.0 for unique sol'
         write(msg(3),f2) 'disc  = ',disc
         write(msg(4),f2) 'disc0 = ',disc0
-        write(msg(5),f1) 'i can try to force a real & positive solution by' // &
-          ' passing RealPos=.true.'
         call raise_fatal(modName,myName,msg)
       endif
     elseif (beta /= 0.0d0) then
@@ -522,7 +518,7 @@ contains
       x_pucl3 = u_pucl3
     endif
     ! TO-DO: fix temperature in nacl_abc call
-    call nacl_abc(1000.0d0,nacl_a,nacl_b,nacl_c)
+    call nacl_abc(1499.0d0,nacl_a,nacl_b,nacl_c)
     call ucl3_abc(ucl3_a,ucl3_b,ucl3_c)
     call pucl3_abc(pucl3_a,pucl3_b,pucl3_c)
     suma = x_nacl * nacl_a + x_ucl3 * ucl3_a + x_pucl3 * pucl3_a

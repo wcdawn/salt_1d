@@ -1,6 +1,7 @@
 program salt_1d
 use saltprops
 use func_tools
+use unitconv
 implicit none
 
 real(8) :: tlo,thi
@@ -32,6 +33,5 @@ write(*,'(a)') 'success'
 !   write(*,'(a)') 'error opening h_of_T.out'
 !   write(*,'(a,i6)') 'ios = ',ios
 ! endif
-
 
 endprogram salt_1d

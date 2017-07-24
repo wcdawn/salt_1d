@@ -4,9 +4,9 @@ implicit none
 
 !-------------------------------------------------------------------------------
 ! module for calculating salt properties
-! currently designed with 1*PuCl3-8*UCl3-10*NaCl in mind and calculating only 
+! currently designed with 1*PuCl3-8*UCl3-10*NaCl in mind and calculating only
 ! enthalpy and temperature
-! the functions were maintained general where practical and should be expanded 
+! the functions were maintained general where practical and should be expanded
 ! in the future
 !------------------------------------------------------------------------------
 
@@ -20,7 +20,7 @@ character(*),parameter :: f1 = '(a)'
 character(*),parameter :: f2 = '(a,e12.6)'
 ! 101 format(a)       ! plain-text descriptor
 ! 102 format(a,e12.6) ! plain-text followed by real
-contains 
+contains
 ! TO-DO:
 !        add abstraction to allow for different functions later
 !        add reverse function calc_T
@@ -44,7 +44,7 @@ contains
     character(*),parameter :: myName = 'h_nacl_abc'
     real(8),intent(in) :: T
     real(8),intent(out) :: a,b,c
-    
+
     ! TO-DO: repair
     ! if ((T >= 298.0d0) .and. (T <= 1500.0d0)) then
     if ((T <= 1500.0d0)) then
@@ -85,7 +85,7 @@ contains
   real(8) function h_nacl(T)
     real(8) :: T
     real(8) :: a,b,c
-    
+
     call nacl_abc(T,a,b,c)
     h_nacl = h_abc(T,a,b,c)
   endfunction h_nacl
@@ -104,15 +104,15 @@ contains
 !-------------------------------------------------------------------------------
   subroutine ucl3_abc(a,b,c)
     real(8),intent(out) :: a,b,c
-    
+
     a = 150.0d-3
     b = 0.0d-3
     c = 0.0d-3
   endsubroutine ucl3_abc
-  
+
 !-------------------------------------------------------------------------------
 ! calculate molar enthalpy of UCl3
-! 
+!
 ! arguments --------------------------------------------------------------------
 ! T       temperature             [K]
 ! h_ucl3  molar enthalpy of UCl3  [kJ/mol]
@@ -124,11 +124,11 @@ contains
   real(8) function h_ucl3(T)
     real(8) :: T
     real(8) :: a,b,c
-    
+
     call ucl3_abc(a,b,c)
     h_ucl3 = h_abc(T,a,b,c)
   endfunction h_ucl3
-  
+
 !-------------------------------------------------------------------------------
 ! return coefficients for calculating cp for PuCl3
 ! coefficients from "Thermodynamic evaluation of the NaCl-MgCl2-Ucl3-PuCl3 system"
@@ -142,12 +142,12 @@ contains
 !-------------------------------------------------------------------------------
   subroutine pucl3_abc(a,b,c)
     real(8),intent(out) :: a,b,c
-    
+
     a = 144.0d-3
     b = 0.0d-3
     c = 0.0d-3
   endsubroutine pucl3_abc
-  
+
 !-------------------------------------------------------------------------------
 ! calculate molar enthalpy of PuCl3
 !
@@ -162,7 +162,7 @@ contains
   real(8) function h_pucl3(T)
     real(8) :: T
     real(8) :: a,b,c
-    
+
     call pucl3_abc(a,b,c)
     h_pucl3 = h_abc(T,a,b,c)
   endfunction h_pucl3
@@ -185,12 +185,12 @@ contains
   real(8) function h_abc(T,a,b,c)
     real(8) :: T,a,b,c
     real(8) :: cp_int,dT
-    
+
     dT = T - 273.15d0
     cp_int   = a * dT + 0.5d0 * b * dT ** 2.0d0 + (1.0d0 / 3.0d0) * c * dT ** 3.0d0
     h_abc = cp_int
   endfunction h_abc
-  
+
 !-------------------------------------------------------------------------------
 ! calculate the molar enthalpy of mixing in a molten UCl3-NaCl system
 ! data from "Enthalpies of mixing in molten UCle-NaCl system"
@@ -219,11 +219,11 @@ contains
       0.841d0]
     integer :: ilo
     real(8) :: weight
-    
+
     call return_weight_binary(x_ucl3,x_arr,ilo,weight)
     hmix_ucl3_nacl = linear_interpolate(hmix_arr,ilo,weight)
   endfunction hmix_ucl3_nacl
-  
+
 !-------------------------------------------------------------------------------
 ! calculate speicific enthalpy of PuCl3-UCl3-NaCl system
 !
@@ -243,7 +243,7 @@ contains
     real(8) :: T
     real(8),optional :: u_nacl,u_ucl3,u_pucl3
     real(8) :: x_nacl,x_ucl3,x_pucl3
-    
+
     ! set default mole fractions
     call x_default(x_nacl,x_ucl3,x_pucl3)
     if (present(u_nacl)) then
@@ -269,7 +269,7 @@ contains
     ! convert molar enthalpy to specific enthalpy
     calc_h = calc_h * (1.0d0 / molar_mass(x_nacl,x_ucl3,x_pucl3))
   endfunction calc_h
-  
+
 !-------------------------------------------------------------------------------
 ! return the lower index and weight fraction for interpolation
 ! this method employs a binary search for an ordered list of general length
@@ -294,7 +294,7 @@ contains
     real(8),intent(out) :: weight
     integer :: lower,upper,i
     logical :: found
-    
+
     if ((x > arr(size(arr))) .or. (x < arr(1))) then
       msg = ''
       write(msg(1),f1) 'x out of bounds for interpolation'
@@ -302,7 +302,7 @@ contains
       write(msg(3),'(2(a,e12.6))') 'arr(1) = ',arr(1), &
         ' arr(size(arr)) = ',arr(size(arr))
       call raise_fatal(modName,myName,msg)
-    endif    
+    endif
     lower = 1
     upper = size(arr)
     found = .false.
@@ -336,7 +336,7 @@ contains
       write(msg(2),'(a,i10)') 'ilo = ',ilo
     endif
   endsubroutine return_weight_binary
-  
+
 !-------------------------------------------------------------------------------
 ! linearly interpolate on an array of data
 ! TO-DO: consider moving this to another module
@@ -352,16 +352,16 @@ contains
     real(8),dimension(:) :: arr
     integer :: ilo
     real(8) :: weight
-    
+
     linear_interpolate = arr(ilo) + weight * (arr(ilo + 1) - arr(ilo))
   endfunction linear_interpolate
-  
+
 !-------------------------------------------------------------------------------
 ! solve a general cubic function
 ! alpha*x**3+beta*x**2+gamma*x+delta=0
 ! currently only supports functions with one multiple-root
 ! TO-DO: consider moving this to another module
-! 
+!
 ! arguments --------------------------------------------------------------------
 ! alpha  function coefficient
 ! beta      "         "
@@ -377,7 +377,7 @@ contains
     real(8),optional :: umin,umax
     real(8) :: disc,disc0
     real(8) :: r1,r2,r3
-    
+
     if (alpha /= 0.0d0) then
       ! true cubic
       disc = 18.0d0 * alpha * beta * gamma * delta - &
@@ -507,7 +507,7 @@ contains
     real(8) :: ucl3_a,ucl3_b,ucl3_c    ! used for sums
     real(8) :: pucl3_a,pucl3_b,pucl3_c ! used for sums
     real(8) :: x_nacl,x_ucl3,x_pucl3
-    
+
     h = hin
     call x_default(x_nacl,x_ucl3,x_pucl3)
     if (present(u_nacl)) then
@@ -540,6 +540,8 @@ contains
     sumb = sumb * 0.5d0
     calc_T = cubic_solve(sumc,sumb,suma,(hmix_ucl3_nacl(x_ucl3 + x_pucl3) - hm), &
       umin=298.0d0,umax=2.0d3)
+    ! adjust units
+    calc_T = calc_T + 273.15d0
     msg = ''
     write(msg(1),f1) 'calc_T not yet supported'
     call raise_warning(modName,myName,msg)
@@ -547,7 +549,7 @@ contains
 
 !-------------------------------------------------------------------------------
 ! return default mole fractions for soft reactor
-! based on 1*PuCl3-8*UCl3-10*NaCl from 
+! based on 1*PuCl3-8*UCl3-10*NaCl from
 ! "Reator with very low fission product inventory" M. Taube, W. Heer, 1980
 !
 ! arguments --------------------------------------------------------------------
@@ -558,7 +560,7 @@ contains
 !-------------------------------------------------------------------------------
   subroutine x_default(x_nacl,x_ucl3,x_pucl3)
     real(8),intent(out) :: x_nacl,x_ucl3,x_pucl3
-    
+
     x_nacl  = (10.0d0 / 19.0d0)
     x_ucl3  = (8.0d0  / 19.0d0)
     x_pucl3 = (1.0d0  / 19.0d0)
@@ -581,7 +583,7 @@ contains
     character(*),parameter :: myName = 'molar_mass'
     real(8) :: x_nacl,x_ucl3,x_pucl3
     real(8) :: m_nacl,m_ucl3,m_pucl3
-    
+
     ! check to make sure mole fractions sum to 1.0
     if ((x_nacl + x_ucl3 + x_pucl3) /= 1.0d0) then
       msg = ''

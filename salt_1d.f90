@@ -3,13 +3,9 @@ use saltprops
 use func_tools
 implicit none
 
-
-integer :: ios
 real(8) :: tlo,thi
 real(8) :: T,dt
 integer :: i,nStep
-real(8) :: alpha,beta,gamma,delta
-real(8) :: h
 real(8) :: temp
 real(8),parameter :: tol = 1.0d-10
 
@@ -20,9 +16,7 @@ dt = (thi - tlo) / real((nStep - 1),8)
 T = tlo
 do i = 1,nStep
   temp = calc_T(calc_h(T))
-  ! need a soft-equals function
-  write(*,'(3(e12.6,x),l2)') T, temp, (T - temp), (T .approxeq. temp)
-  ! if (abs(T - temp) > tol) then
+  ! write(*,'(3(e12.6,x),l2)') T, temp, (T - temp), (T .approxeq. temp)
   if (T .approxne. temp) then
     write(*,'(a)') 'T /= calc_T(calc_h(T))'
     write(*,'(a,e12.6)') 'T = ',T
@@ -32,8 +26,6 @@ do i = 1,nStep
   T = T + dt
 enddo
 write(*,'(a)') 'success'
-write(*,*)
-write(*,*) (1.0d0 .approxne. 2.0d0)
 
 ! open(unit = 11, file = 'h_of_T.out',status = 'replace',action = 'write',iostat = ios)
 ! if (ios /= 0) then
@@ -41,13 +33,5 @@ write(*,*) (1.0d0 .approxne. 2.0d0)
 !   write(*,'(a,i6)') 'ios = ',ios
 ! endif
 
-! h = 269.0d0
-! write(*,*) calc_T(h)
-! should return 810
-alpha = 0.0d0
-beta  = 2.0d0
-gamma = 4.0d0
-delta = -4.0d0
-write(*,*) cubic_solve(alpha,beta,gamma,delta,umax=2.0d3,umin=0.0d0)
 
 endprogram salt_1d

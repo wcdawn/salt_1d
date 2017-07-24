@@ -13,15 +13,12 @@ implicit none
 private
 public :: calc_h
 public :: calc_T
-! TO-DO: make this private
-public :: cubic_solve
 character(*),parameter :: modName = 'saltprops'
 character(*),parameter :: f1 = '(a)'
 character(*),parameter :: f2 = '(a,e12.6)'
 contains
 ! TO-DO:
 !        add abstraction to allow for different functions
-!        clarify when h is molar and specific (hm vs. h)
 
 !-------------------------------------------------------------------------------
 ! return coefficients for calculating cp for NaCl
@@ -514,7 +511,7 @@ contains
       x_ucl3 = u_ucl3
       x_pucl3 = u_pucl3
     endif
-    ! TO-DO: fix temperature in nacl_abc call
+    ! this assumes temperature below 1500K
     call nacl_abc(1499.0d0,nacl_a,nacl_b,nacl_c)
     call ucl3_abc(ucl3_a,ucl3_b,ucl3_c)
     call pucl3_abc(pucl3_a,pucl3_b,pucl3_c)
@@ -528,6 +525,14 @@ contains
       umin=298.0d0,umax=1.5d3)
     ! adjust units
     calc_T = calc_T + 273.15d0
+    if (calc_T > 1.5d3) then
+      msg = ''
+      write(msg(1),f1) 'temperature calculated from enthalpy greater than 1500K'
+      write(msg(2),f1) 'this is not supported and the wrong coeffiencts are used'
+      write(msg(3),f1) 'results are wrong. how wrong, no one knows.'
+      write(msg(4),f2) 'calc_T = ',calc_T
+      call raise_warning(modName,myName,msg)
+    endif
   endfunction calc_T
 
 !-------------------------------------------------------------------------------

@@ -20,10 +20,7 @@ character(*),parameter :: f1 = '(a)'
 character(*),parameter :: f2 = '(a,e12.6)'
 contains
 ! TO-DO:
-!        add abstraction to allow for different functions later
-!        add reverse function calc_T
-!        add .APPROXEQ. see .../Futility/src/IntrType.f90
-!        fix cubic_solve add option for positive real root
+!        add abstraction to allow for different functions
 !        clarify when h is molar and specific (hm vs. h)
 
 !-------------------------------------------------------------------------------
@@ -69,20 +66,20 @@ contains
 ! calculate molar enthalpy of NaCl
 !
 ! arguments --------------------------------------------------------------------
-! T       temperature             [K]
-! h_nacl  molar enthalpy of NaCl  [kJ/mol]
+! T        temperature             [K]
+! hm_nacl  molar enthalpy of NaCl  [kJ/mol]
 ! local variables --------------------------------------------------------------
 ! a     coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
 ! b     coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
 ! c     coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
 !-------------------------------------------------------------------------------
-  real(8) function h_nacl(T)
+  real(8) function hm_nacl(T)
     real(8) :: T
     real(8) :: a,b,c
 
     call nacl_abc(T,a,b,c)
-    h_nacl = h_abc(T,a,b,c)
-  endfunction h_nacl
+    hm_nacl = h_abc(T,a,b,c)
+  endfunction hm_nacl
 
 !-------------------------------------------------------------------------------
 ! return coefficients for calculating cp for UCl3
@@ -108,20 +105,20 @@ contains
 ! calculate molar enthalpy of UCl3
 !
 ! arguments --------------------------------------------------------------------
-! T       temperature             [K]
-! h_ucl3  molar enthalpy of UCl3  [kJ/mol]
+! T        temperature             [K]
+! hm_ucl3  molar enthalpy of UCl3  [kJ/mol]
 ! local variables --------------------------------------------------------------
 ! a     coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
 ! b     coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
 ! c     coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
 !-------------------------------------------------------------------------------
-  real(8) function h_ucl3(T)
+  real(8) function hm_ucl3(T)
     real(8) :: T
     real(8) :: a,b,c
 
     call ucl3_abc(a,b,c)
-    h_ucl3 = h_abc(T,a,b,c)
-  endfunction h_ucl3
+    hm_ucl3 = h_abc(T,a,b,c)
+  endfunction hm_ucl3
 
 !-------------------------------------------------------------------------------
 ! return coefficients for calculating cp for PuCl3
@@ -146,20 +143,20 @@ contains
 ! calculate molar enthalpy of PuCl3
 !
 ! arguments --------------------------------------------------------------------
-! T        temperature              [K]
-! h_pucl3  molar enthalpy of PuCl3  [kJ/mol]
+! T         temperature              [K]
+! hm_pucl3  molar enthalpy of PuCl3  [kJ/mol]
 ! local variables --------------------------------------------------------------
 ! a     coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
 ! b     coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
 ! c     coefficient for calculation of cp=a+b*T+c*T**2  [kJ/K/mol]
 !-------------------------------------------------------------------------------
-  real(8) function h_pucl3(T)
+  real(8) function hm_pucl3(T)
     real(8) :: T
     real(8) :: a,b,c
 
     call pucl3_abc(a,b,c)
-    h_pucl3 = h_abc(T,a,b,c)
-  endfunction h_pucl3
+    hm_pucl3 = h_abc(T,a,b,c)
+  endfunction hm_pucl3
 
 !-------------------------------------------------------------------------------
 ! calculate molar enthalpy given coefficients a, b, and c.
@@ -193,21 +190,21 @@ contains
 ! should be included in x_ucl3 i.e. x_ucl3 = x_UCl3 + x_PuCl3
 !
 ! arguments --------------------------------------------------------------------
-! x_ucl3          mole fraction of UCl3 in the UCl3-NaCl system
-! hmix_ucl3_nacl  molar enthalpy of mixing of UCl3-NaCl system   [kJ/mol]
+! x_ucl3           mole fraction of UCl3 in the UCl3-NaCl system
+! hmmix_ucl3_nacl  molar enthalpy of mixing of UCl3-NaCl system   [kJ/mol]
 ! local variables --------------------------------------------------------------
 ! x_arr     array of x_ucl3 from experimental data
 ! hmix_arr  array of molar enthalpy of mixing from experimental data [kJ/mol]
 ! ilo       index of lower value for interpolation
 ! weight    weight fraction for interpolation
 !-------------------------------------------------------------------------------
-  real(8) function hmix_ucl3_nacl(x_ucl3)
+  real(8) function hmmix_ucl3_nacl(x_ucl3)
     real(8) :: x_ucl3
     real(8),dimension(23),parameter :: x_arr = [0.0048d0,0.0505d0,0.0978d0, &
       0.100d0,0.124d0,0.150d0,0.174d0,0.201d0,0.247d0,0.296d0,0.323d0,0.374d0, &
       0.390d0,0.413d0,0.500d0,0.554d0,0.626d0,0.652d0,0.749d0,0.802d0,0.864d0, &
       0.903d0,0.949d0]
-    real(8),dimension(23),parameter :: hmix_arr = (-1.0d0) * [0.172d0,1.67d0, &
+    real(8),dimension(23),parameter :: hmmix_arr = (-1.0d0) * [0.172d0,1.67d0, &
       2.79d0,3.04d0,3.76d0,3.95d0,4.62d0,5.14d0,5.78d0,5.99d0,6.60d0,7.45d0, &
       7.28d0,7.08d0,7.38d0,6.99d0,7.10d0,6.58d0,4.57d0,3.89d0,1.75d0,1.64d0, &
       0.841d0]
@@ -215,8 +212,8 @@ contains
     real(8) :: weight
 
     call return_weight_binary(x_ucl3,x_arr,ilo,weight)
-    hmix_ucl3_nacl = linear_interpolate(hmix_arr,ilo,weight)
-  endfunction hmix_ucl3_nacl
+    hmmix_ucl3_nacl = linear_interpolate(hmmix_arr,ilo,weight)
+  endfunction hmmix_ucl3_nacl
 
 !-------------------------------------------------------------------------------
 ! calculate speicific enthalpy of PuCl3-UCl3-NaCl system
@@ -258,8 +255,8 @@ contains
       x_pucl3 = u_pucl3
     endif
     ! calculate molar enthalpy of system
-    calc_h = x_nacl * h_nacl(T) + x_ucl3 * h_ucl3(T) + x_pucl3 * h_pucl3(T) + &
-      hmix_ucl3_nacl(x_ucl3 + x_pucl3)
+    calc_h = x_nacl * hm_nacl(T) + x_ucl3 * hm_ucl3(T) + &
+      x_pucl3 * hm_pucl3(T) + hmmix_ucl3_nacl(x_ucl3 + x_pucl3)
     ! convert molar enthalpy to specific enthalpy
     calc_h = calc_h * (1.0d0 / molar_mass(x_nacl,x_ucl3,x_pucl3))
   endfunction calc_h
@@ -527,7 +524,7 @@ contains
     hm = h * molar_mass(x_nacl,x_ucl3,x_pucl3)
     sumc = sumc * (1.0d0 / 3.0d0)
     sumb = sumb * 0.5d0
-    calc_T = cubic_solve(sumc,sumb,suma,(hmix_ucl3_nacl(x_ucl3 + x_pucl3) - hm), &
+    calc_T = cubic_solve(sumc,sumb,suma,(hmmix_ucl3_nacl(x_ucl3 + x_pucl3) - hm), &
       umin=298.0d0,umax=1.5d3)
     ! adjust units
     calc_T = calc_T + 273.15d0
